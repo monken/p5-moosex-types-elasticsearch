@@ -41,7 +41,7 @@ coerce ES, from ArrayRef, via {
                           timeout   => 30, );
 };
 
-enum QueryType, qw(query_and_fetch query_then_fetch dfs_query_and_fetch dfs_query_then_fetch scan count);
+enum QueryType, [qw(query_and_fetch query_then_fetch dfs_query_and_fetch dfs_query_then_fetch scan count)];
 
 class_type ESDateTime;
 coerce ESDateTime, from Str, via {
