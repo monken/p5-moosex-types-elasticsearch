@@ -1,3 +1,6 @@
+0.0.3
+  - Fix enum compatibility on Moose 2.1100+
+
 0.0.2 2012-01-13
   - scan and count query_types
 
