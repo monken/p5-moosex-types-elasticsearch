@@ -4,44 +4,47 @@ package MooseX::Types::ElasticSearch;
 
 use DateTime::Format::Epoch::Unix;
 use DateTime::Format::ISO8601;
-use ElasticSearch;
+use Search::Elasticsearch;
 
 use MooseX::Types -declare => [
     qw(
       Location
       QueryType
+      SearchType
       ES
       ESDateTime
       ) ];
 
-use MooseX::Types::Moose qw/Int Str ArrayRef HashRef/;
+use MooseX::Types::Moose qw/Int Str ArrayRef HashRef Object/;
 
 coerce ArrayRef, from Str, via { [$_] };
 
-class_type ES, { class => 'ElasticSearch' };
+subtype ES, as Object;
 coerce ES, from Str, via {
     my $server = $_;
     $server = "127.0.0.1$server" if ( $server =~ /^:/ );
     return
-      ElasticSearch->new( servers   => $server,
-                          transport => 'httptiny',
-                          timeout   => 30, );
+      Search::Elasticsearch->new( nodes   => $server,
+                          cxn     => "HTTPTiny",
+                        );
 };
 
 coerce ES, from HashRef, via {
-    return ElasticSearch->new(%$_);
+    return Search::Elasticsearch->new(%$_);
 };
 
 coerce ES, from ArrayRef, via {
     my @servers = @$_;
     @servers = map { /^:/ ? "127.0.0.1$_" : $_ } @servers;
     return
-      ElasticSearch->new( servers   => \@servers,
-                          transport => 'httptiny',
-                          timeout   => 30, );
+      Search::Elasticsearch->new( nodes   => \@servers,
+                          cxn     => "HTTPTiny",
+                        );
 };
 
-enum QueryType, qw(query_and_fetch query_then_fetch dfs_query_and_fetch dfs_query_then_fetch scan count);
+enum QueryType, [qw(query_and_fetch query_then_fetch dfs_query_and_fetch dfs_query_then_fetch scan count)];
+
+subtype SearchType, as QueryType;
 
 class_type ESDateTime;
 coerce ESDateTime, from Str, via {
@@ -71,7 +74,7 @@ coerce Location, from Str, via { [ reverse split(/,/) ] };
 
 =head2 ES
 
-This type matches against an L<ElasticSearch> instance. It coerces from a C<Str>, C<ArrayRef> and C<HashRef>.
+This type matches against an L<Elasticsearch> instance. It coerces from a C<Str>, C<ArrayRef> and C<HashRef>.
 
 If the string contains only the port number (e.g. C<":9200">), then C<127.0.0.1:9200> is assumed.
 
@@ -80,9 +83,10 @@ If the string contains only the port number (e.g. C<":9200">), then C<127.0.0.1:
 ElasticSearch expects values for geo coordinates (C<geo_point>) as an C<ArrayRef> of longitude and latitude.
 This type coerces from C<Str> (C<"lat,lon">) and C<HashRef> (C<< { lat => 41.12, lon => -71.34 } >>).
 
-=head2 QueryType
+=head2 SearchType
 
-C<Enum> type. Valid values are: C<query_and_fetch query_then_fetch dfs_query_and_fetch dfs_query_then_fetch>
+C<Enum> type. Valid values are: C<query_and_fetch query_then_fetch dfs_query_and_fetch dfs_query_then_fetch scan count>.
+The now deprecated C<QueryType> is also still available.
 
 =head2 ESDateTime
 
